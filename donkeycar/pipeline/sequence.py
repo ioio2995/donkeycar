@@ -1,8 +1,8 @@
-
 from typing import (Any, Callable, Generic, Iterable, Iterator, List, Sized,
                     Tuple, TypeVar)
 
 from donkeycar.pipeline.types import TubRecord
+from donkeycar.pipeline.database import BackgroundImageLoader
 
 # Note: Be careful when re-using `TypeVar`s.
 # If you are not-consistent mypy gets easily confused.
@@ -25,6 +25,10 @@ class TubSeqIterator(SizedIterator[TubRecord]):
     def __init__(self, records: List[TubRecord]) -> None:
         self.records = records or list()
         self.current_index = 0
+
+        # Précharger les images en arrière-plan lors de l'initialisation
+        self.background_loader = BackgroundImageLoader(self.records)
+        self.background_loader.preload_images()
 
     def __len__(self):
         return len(self.records)
