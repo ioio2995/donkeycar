@@ -481,16 +481,17 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def get_model_by_type(model_type: str, cfg: 'Config') -> Union['KerasPilot', 'FastAiPilot']:
+def get_model_by_type(model_type: str, cfg: 'Config') -> Union['KerasPilot', 'FastAiPilot', 'HailoPilot']:
     '''
-    given the string model_type and the configuration settings in cfg
-    create a Keras model and return it.
+    Given the string model_type and the configuration settings in cfg,
+    create and return the appropriate model instance (Keras, FastAI, Hailo).
     '''
     from donkeycar.parts.keras import KerasCategorical, KerasLinear, \
         KerasInferred, KerasIMU, KerasMemory, KerasBehavioral, KerasLocalizer, \
         KerasLSTM, Keras3D_CNN
     from donkeycar.parts.interpreter import KerasInterpreter, TfLite, TensorRT, \
         FastAIInterpreter
+    from donkeycar.parts.hailo import HailoLinear
 
     if model_type is None:
         model_type = cfg.DEFAULT_MODEL_TYPE
@@ -508,6 +509,10 @@ def get_model_by_type(model_type: str, cfg: 'Config') -> Union['KerasPilot', 'Fa
         if used_model_type == "linear":
             from donkeycar.parts.fastai import FastAILinear
             return FastAILinear(interpreter=interpreter, input_shape=input_shape)
+    elif 'hailo_' in model_type:
+        used_model_type = model_type.replace('hailo_', '')
+        if used_model_type == "linear":
+            return HailoLinear(input_shape=input_shape)
     else:
         interpreter = KerasInterpreter()
         used_model_type = model_type
@@ -545,7 +550,7 @@ def get_model_by_type(model_type: str, cfg: 'Config') -> Union['KerasPilot', 'Fa
         kl = Keras3D_CNN(interpreter=interpreter, input_shape=input_shape,
                          seq_length=cfg.SEQUENCE_LENGTH)
     else:
-        known = [k + u for k in ('', 'tflite_', 'tensorrt_')
+        known = [k + u for k in ('', 'tflite_', 'tensorrt_', 'hailo_')
                  for u in used_model_type.mem]
         raise ValueError(f"Unknown model type {model_type}, supported types are"
                          f" { ', '.join(known)}")

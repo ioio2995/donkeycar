@@ -320,7 +320,7 @@ class RPLidar(object):
             filter_dist = dists[(angs > self.lower_limit) & (angs < self.upper_limit)] #sorts distances based on angle values
 
             angles_ind = np.argsort(filter_angs)         # returns the indexes that sorts filter_angs
-            if angles_ind != []:
+            if angles_ind.any():
                 sorted_distances = np.argsort(filter_dist) # sorts distances based on angle indexes
         return sorted_distances
 
