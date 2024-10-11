@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import numpy as np
-import cv2
 from typing import Dict, Tuple, Optional, Union, List, Sequence, Callable
 from logging import getLogger
 import time 
@@ -68,12 +67,8 @@ class HailoPilot(ABC):
         # Start timing for inference
         start_time = time.time()
 
-        # Preprocess the image using OpenCV and NumPy
-        img_resized = cv2.resize(np.array(img_arr), (self.input_shape[1], self.input_shape[0]))
-        logger.debug(f"Image resized to {self.input_shape}")
-
         # Convert directly to uint8
-        img_uint8 = img_resized.astype('uint8')
+        img_uint8 = img_arr.astype('uint8')
         logger.debug(f"Image converted to uint8. Shape: {img_uint8.shape}, dtype: {img_uint8.dtype}")
 
         # Add a batch dimension (1, H, W, C)
