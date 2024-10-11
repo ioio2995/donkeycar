@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 class ImageAugmentation:
     def __init__(self, cfg, key, prob=0.5, always_apply=False):
         aug_list = getattr(cfg, key, [])
-
         augmentations = [ImageAugmentation.create(a, cfg, prob, always_apply)
                          for a in aug_list]
         self.augmentations = A.Compose(augmentations)
@@ -45,4 +44,4 @@ class ImageAugmentation:
             return img_arr
         aug_img_arr = self.augmentations(image=img_arr)["image"]
         return aug_img_arr
-    
+
