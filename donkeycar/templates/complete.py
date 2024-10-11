@@ -978,37 +978,21 @@ def add_drivetrain(V, cfg):
             V.add(steering, inputs=['steering'], threaded=True)
             V.add(throttle, inputs=['throttle'], threaded=True)
 
-             # Optionally add gear shifting control (if applicable)
-            if cfg.HAS_GEAR:
-                gear_controller = PulseController(
-                    pwm_pin=pins.pwm_pin_by_id(dt["PWM_GEAR_PIN"]),
-                    pwm_scale=dt["PWM_GEAR_SCALE"],
-                    pwm_inverted=dt["PWM_GEAR_INVERTED"])
-                gear = PWMGear(controller=gear_controller,
-                            low_pulse=dt["GEAR_LOW_PWM"],
-                            high_pulse=dt["GEAR_HIGH_PWM"])
-                V.add(gear, inputs=['gear_position'], threaded=False)
-
-            if cfg.HAS_FRONT_TLOCK:
-                front_tlock_controller = PulseController(
-                    pwm_pin=pins.pwm_pin_by_id(dt["PWM_FRONT_TLOCK_PIN"]),
-                    pwm_scale=dt["PWM_FRONT_TLOCK_SCALE"],
-                    pwm_inverted=dt["PWM_FRONT_TLOCK_INVERTED"])
-                front_tlock = PWMTLock(controller=front_tlock_controller,
-                                    lock_pulse=dt["FRONT_TLOCK_LOCK_PWM"],
-                                    unlock_pulse=dt["FRONT_TLOCK_UNLOCK_PWM"])
-                V.add(front_tlock, inputs=['front_lock_state'], threaded=False)
-
-            # Optionally add rear T-lock control (if applicable)
-            if cfg.HAS_REAR_TLOCK:
-                rear_tlock_controller = PulseController(
-                    pwm_pin=pins.pwm_pin_by_id(dt["PWM_REAR_TLOCK_PIN"]),
-                    pwm_scale=dt["PWM_REAR_TLOCK_SCALE"],
-                    pwm_inverted=dt["PWM_REAR_TLOCK_INVERTED"])
-                rear_tlock = PWMTLock(controller=rear_tlock_controller,
-                                    lock_pulse=dt["REAR_TLOCK_LOCK_PWM"],
-                                    unlock_pulse=dt["REAR_TLOCK_UNLOCK_PWM"])
-                V.add(rear_tlock, inputs=['rear_lock_state'], threaded=False)
+            for var_name in dir(cfg):
+                if var_name.startswith("PWM_AUX_BOOL_"):
+                    dt_device = getattr(cfg, var_name)
+                    if dt_device is not None:
+                        device_name = var_name.replace("PWM_AUX_BOOL_", "").lower()
+                        device_controller = PulseController(
+                            pwm_pin=pins.pwm_pin_by_id(dt_device["PWM_PIN"]),
+                            pwm_scale=dt_device["PWM_SCALE"],
+                            pwm_inverted=dt_device["PWM_INVERTED"]
+                        )
+                        device = PWMBooleanDevice(
+                            controller=device_controller,
+                            true_pulse=dt_device["TRUE_PWM"],
+                            false_pulse=dt_device["FALSE_PWM"])
+                        V.add(device, inputs=[f'{device_name}_state'], threaded=False)
 
         elif cfg.DRIVE_TRAIN_TYPE == "I2C_SERVO":
             #

@@ -92,33 +92,34 @@ PWM_STEERING_THROTTLE = {
     "THROTTLE_FORWARD_PWM": 500,            #pwm value for max forward throttle
     "THROTTLE_STOPPED_PWM": 370,            #pwm value for no movement
     "THROTTLE_REVERSE_PWM": 220,            #pwm value for max reverse throttle
-
-    # Gear shifting (if applicable)
-    "PWM_GEAR_PIN": "PCA9685.1:40.2",       # Pin for the gear servo
-    "PWM_GEAR_SCALE": 1.0,                  # Scale for gear control
-    "PWM_GEAR_INVERTED": False,             # Inverted control for the gear servo
-    "GEAR_LOW_PWM": 450,                   # PWM value for low gear
-    "GEAR_HIGH_PWM": 300,                  # PWM value for high gear
-
-    # Front T-lock control (if applicable)
-    "PWM_FRONT_TLOCK_PIN": "PCA9685.1:40.4",  # Pin for front T-lock
-    "PWM_FRONT_TLOCK_SCALE": 1.0,             # Scale for front T-lock control
-    "PWM_FRONT_TLOCK_INVERTED": False,        # Inverted control for the front T-lock
-    "FRONT_TLOCK_LOCK_PWM": 320,             # PWM value for locking the front differential
-    "FRONT_TLOCK_UNLOCK_PWM": 400,           # PWM value for unlocking the front differential
-
-    # Rear T-lock control (if applicable)
-    "PWM_REAR_TLOCK_PIN": "PCA9685.1:40.3",     # Pin for rear T-lock
-    "PWM_REAR_TLOCK_SCALE": 1.0,                # Scale for rear T-lock control
-    "PWM_REAR_TLOCK_INVERTED": False,           # Inverted control for the rear T-lock
-    "REAR_TLOCK_LOCK_PWM": 400,                 # PWM value for locking the rear differential
-    "REAR_TLOCK_UNLOCK_PWM": 320,               # PWM value for unlocking the rear differential
 }
 
-# Enable or disable features
-HAS_GEAR = False            # Set to False if gear shifting is not present
-HAS_FRONT_TLOCK = False     # Set to False if front T-lock is not present
-HAS_REAR_TLOCK = False      # Set to False if rear T-lock is not present
+# Gear shifting (if applicable)
+PWM_AUX_BOOL_GEAR = {
+    "PWM_PIN": "PCA9685.1:40.2",       # Pin for the gear servo
+    "PWM_SCALE": 1.0,                  # Scale for gear control
+    "PWM_INVERTED": False,             # Inverted control for the gear servo
+    "TRUE_PWM": 300,                  # PWM value for high gear
+    "FALSE_PWM": 450,                   # PWM value for low gear
+}
+
+# Front T-lock control (if applicable)
+PWM_AUX_BOOL_TLOCK_FRONT = {
+    "PWM_PIN": "PCA9685.1:40.4",  # Pin for front T-lock
+    "PWM_SCALE": 1.0,             # Scale for front T-lock control
+    "PWM_INVERTED": False,        # Inverted control for the front T-lock
+    "TRUE_PWM": 320,             # PWM value for locking the front differential
+    "FALSE_PWM": 400,           # PWM value for unlocking the front differential
+}
+
+# Rear T-lock control (if applicable)
+PWM_AUX_BOOL_TLOCK_REAR = {
+    "PWM_PIN": "PCA9685.1:40.3",     # Pin for rear T-lock
+    "PWM_SCALE": 1.0,                # Scale for rear T-lock control
+    "PWM_INVERTED": False,           # Inverted control for the rear T-lock
+    "TRUE_PWM": 400,                 # PWM value for locking the rear differential
+    "FALSE_PWM": 320,               # PWM value for unlocking the rear differential
+}
 
 #
 # I2C_SERVO (deprecated in favor of PWM_STEERING_THROTTLE)
