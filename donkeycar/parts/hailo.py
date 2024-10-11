@@ -5,6 +5,8 @@ from typing import Dict, Tuple, Optional, Union, List, Sequence, Callable
 from logging import getLogger
 import time 
 
+import donkeycar as dk
+
 from hailo_platform import VDevice, HEF, InferVStreams, InputVStreamParams, OutputVStreamParams, FormatType, ConfigureParams, HailoStreamInterface
 
 logger = getLogger(__name__)
@@ -35,8 +37,9 @@ class HailoPilot(ABC):
             self.network_group = self.network_groups[0]
 
             # Set the input/output stream parameters
-            self.input_vstreams_params = InputVStreamParams.make(self.network_group, quantized=False, format_type=FormatType.FLOAT32)
+            self.input_vstreams_params = InputVStreamParams.make(self.network_group, quantized=False, format_type=FormatType.UINT8)
             self.output_vstreams_params = OutputVStreamParams.make(self.network_group, quantized=True, format_type=FormatType.UINT8)
+
 
             # Store input/output stream information
             self.input_vstream_info = self.hef.get_input_vstream_infos()[0]
@@ -44,7 +47,7 @@ class HailoPilot(ABC):
 
             # Get the correct input name for inference
             self.input_name = self.input_vstream_info.name
-
+            logger.info(f"Input vstream expected shape: {self.input_vstream_info.shape}")
             logger.info('Model loaded and configured successfully.')
 
         except Exception as e:
@@ -62,42 +65,49 @@ class HailoPilot(ABC):
         """
         Run inference on the input image array and other additional data (e.g., IMU array).
         """
+        # Start timing for inference
+        start_time = time.time()
+
         # Preprocess the image using OpenCV and NumPy
         img_resized = cv2.resize(np.array(img_arr), (self.input_shape[1], self.input_shape[0]))
-        img_normalized = img_resized.astype('float32') / 255.0  # Normalize image to [0, 1]
-        
+        logger.debug(f"Image resized to {self.input_shape}")
+
+        # Convert directly to uint8
+        img_uint8 = img_resized.astype('uint8')
+        logger.debug(f"Image converted to uint8. Shape: {img_uint8.shape}, dtype: {img_uint8.dtype}")
+
         # Add a batch dimension (1, H, W, C)
-        input_data = np.expand_dims(img_normalized, axis=0)
+        input_data = np.expand_dims(img_uint8, axis=0)
+        logger.debug(f"Batch dimension added. Input data shape: {input_data.shape}")
 
         # Prepare the input dictionary for inference
         input_dict = {self.input_name: input_data}
+        logger.debug(f"Prepared input dictionary for inference.")
 
         # If other_arr is provided, convert it to NumPy array and add to input_dict
         if other_arr is not None:
             input_dict['other'] = np.array(other_arr, dtype=np.float32)
+            logger.debug(f"Additional data (IMU) provided: {other_arr}")
 
-        return self.inference_from_dict(input_dict)
+        # Perform inference
+        output = self.inference_from_dict(input_dict)
 
-    def inference_from_dict(self, input_dict: Dict[str, np.ndarray]) -> Tuple[Union[float, np.ndarray], ...]:
+        # End timing for inference
+        end_time = time.time()
+        logger.info(f"Inference completed in {end_time - start_time:.4f} seconds")
+
+        return output
+
+
+    @abstractmethod
+    def inference_from_dict(
+            self, 
+            input_dict: Dict[str, np.ndarray]) \
+            -> Tuple[Union[float, np.ndarray], ...]:
         """
         Run inference using the input dictionary and return the output.
         """
-        try:
-            with InferVStreams(self.network_group, self.input_vstreams_params, self.output_vstreams_params) as infer_pipeline:
-                with self.network_group.activate():
-                    results = infer_pipeline.infer(input_dict)
-                    output_vstream_info = self.hef.get_output_vstream_infos()[0]
-                    # Debug: Afficher le résultat brut
-                    logger.info(f"Raw inference results: {results[output_vstream_info.name]}")
-                    output = results[output_vstream_info.name][0]
-                    if len(output) < 2:
-                        logger.error(f"Expected 2 output values, but got {len(output)}")
-                        return 0.0, 0.0  # Valeurs par défaut si le modèle ne renvoie pas assez d'éléments
-
-                    return self.interpreter_to_output(results[output_vstream_info.name][0])
-        except Exception as e:
-            logger.error(f"Error during Hailo inference: {e}")
-            raise
+        pass
 
     @abstractmethod
     def interpreter_to_output(
@@ -135,8 +145,91 @@ class HailoLinear(HailoPilot):
         # Hailo models don't need compilation like Keras/FastAI models
         logger.info("No compilation necessary for Hailo models.")
 
-    def interpreter_to_output(self, interpreter_out):
-        interpreter_out = (interpreter_out * 2) - 1
-        steering = interpreter_out[0]
-        throttle = interpreter_out[1]
+    def inference_from_dict(self, input_dict: Dict[str, np.ndarray]) -> Tuple[Union[float, np.ndarray], ...]:
+        """
+        Run inference using the input dictionary and return the output.
+        """
+        try:
+            with InferVStreams(self.network_group, self.input_vstreams_params, self.output_vstreams_params) as infer_pipeline:
+                with self.network_group.activate():
+                    # Start timing for the inference pipeline
+                    pipeline_start_time = time.time()
+                    
+                    results = infer_pipeline.infer(input_dict)
+                    
+                    # End timing for the inference pipeline
+                    pipeline_end_time = time.time()
+                    logger.debug(f"Inference pipeline execution time: {pipeline_end_time - pipeline_start_time:.4f} seconds")
+                    
+                                    # Retrieve output layers from the HEF model
+                    output_vstream_info_fc3 = self.hef.get_output_vstream_infos()[0]  # fc3
+                    output_vstream_info_fc4 = self.hef.get_output_vstream_infos()[1]  # fc4
+                    
+                    # Retrieve results for each output layer
+                    fc3_output = results[output_vstream_info_fc3.name][0]
+                    fc4_output = results[output_vstream_info_fc4.name][0]
+                    
+                    logger.info(f"Raw inference results (fc3): {fc3_output}")
+                    logger.info(f"Raw inference results (fc4): {fc4_output}")
+                    return self.interpreter_to_output(fc3_output, fc4_output)
+        except Exception as e:
+            logger.error(f"Error during Hailo inference: {e}")
+            raise
+
+    def interpreter_to_output(self, fc3_output, fc4_output):
+        steering = ((fc4_output[0] / 255.0) * 2 - 1)
+        throttle = ((fc3_output[0] / 255.0) * 2 - 1)
+        logger.info(f"Steering: {steering}, Throttle: {throttle}")
         return steering, throttle
+    
+class HailoInferred(HailoPilot):
+    """
+    Inferred pilot for Hailo.
+    It takes in image input and outputs steering and throttle values.
+    """
+    def __init__(self,
+                 input_shape: Tuple[int, ...] = (120, 160, 3),
+                 num_outputs: int = 1):
+        super().__init__(input_shape)
+
+    def create_model(self):
+        # The Hailo model is loaded and configured via the HEF file.
+        logger.info("Hailo model is already configured through HEF.")
+        return None
+
+    def compile(self):
+        # Hailo models don't need compilation like Keras/FastAI models
+        logger.info("No compilation necessary for Hailo models.")
+
+    def inference_from_dict(self, input_dict: Dict[str, np.ndarray]) -> Tuple[Union[float, np.ndarray], ...]:
+        """
+        Run inference using the input dictionary and return the output.
+        """
+        try:
+            with InferVStreams(self.network_group, self.input_vstreams_params, self.output_vstreams_params) as infer_pipeline:
+                with self.network_group.activate():
+                    # Start timing for the inference pipeline
+                    pipeline_start_time = time.time()
+                    
+                    results = infer_pipeline.infer(input_dict)
+                    
+                    # End timing for the inference pipeline
+                    pipeline_end_time = time.time()
+                    logger.debug(f"Inference pipeline execution time: {pipeline_end_time - pipeline_start_time:.4f} seconds")
+                    
+                                    # Retrieve output layers from the HEF model
+                    output_vstream_info_fc3 = self.hef.get_output_vstream_infos()[0]  # fc3
+                    
+                    # Retrieve results for each output layer
+                    fc3_output = results[output_vstream_info_fc3.name][0]
+                    
+                    logger.info(f"Raw inference results (fc3): {fc3_output}")
+                    return self.interpreter_to_output(fc3_output)
+        except Exception as e:
+            logger.error(f"Error during Hailo inference: {e}")
+            raise
+
+    def interpreter_to_output(self, fc3_output):
+        steering = -((fc3_output[0] / 255.0) * 2 - 1)
+        logger.info(f"Steering: {steering}")
+        return steering, dk.utils.throttle(steering)

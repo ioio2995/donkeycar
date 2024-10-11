@@ -491,12 +491,13 @@ def get_model_by_type(model_type: str, cfg: 'Config') -> Union['KerasPilot', 'Fa
         KerasLSTM, Keras3D_CNN
     from donkeycar.parts.interpreter import KerasInterpreter, TfLite, TensorRT, \
         FastAIInterpreter
-    from donkeycar.parts.hailo import HailoLinear
+    from donkeycar.parts.hailo import HailoLinear, HailoInferred
 
     if model_type is None:
         model_type = cfg.DEFAULT_MODEL_TYPE
     logger.info(f'get_model_by_type: model type is: {model_type}')
     input_shape = (cfg.IMAGE_H, cfg.IMAGE_W, cfg.IMAGE_DEPTH)
+    input_shape_hailo = (cfg.RESIZE_HEIGHT, cfg.RESIZE_WIDTH, cfg.IMAGE_DEPTH)
     if 'tflite_' in model_type:
         interpreter = TfLite()
         used_model_type = model_type.replace('tflite_', '')
@@ -512,7 +513,9 @@ def get_model_by_type(model_type: str, cfg: 'Config') -> Union['KerasPilot', 'Fa
     elif 'hailo_' in model_type:
         used_model_type = model_type.replace('hailo_', '')
         if used_model_type == "linear":
-            return HailoLinear(input_shape=input_shape)
+            return HailoLinear(input_shape=input_shape_hailo)
+        elif used_model_type == "inferred":
+            return HailoInferred(input_shape=input_shape_hailo)
     else:
         interpreter = KerasInterpreter()
         used_model_type = model_type
