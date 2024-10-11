@@ -956,7 +956,7 @@ def add_drivetrain(V, cfg):
             # using a PwmPin for steering (servo)
             # and as second PwmPin for throttle (ESC)
             #
-            from donkeycar.parts.actuator import PWMSteering, PWMThrottle, PWMGear, PWMTLock, PulseController
+            from donkeycar.parts.actuator import PWMSteering, PWMThrottle, PWMBooleanDevice, PulseController
 
             dt = cfg.PWM_STEERING_THROTTLE
             steering_controller = PulseController(
@@ -983,18 +983,19 @@ def add_drivetrain(V, cfg):
                     dt_device = getattr(cfg, var_name)
                     if dt_device is not None:
                         device_name = var_name.replace("PWM_AUX_BOOL_", "").lower()
+                        device_name_state = f'{device_name}_state'
                         device_controller = PulseController(
                             pwm_pin=pins.pwm_pin_by_id(dt_device["PWM_PIN"]),
                             pwm_scale=dt_device["PWM_SCALE"],
                             pwm_inverted=dt_device["PWM_INVERTED"]
                         )
                         device = PWMBooleanDevice(
-                            device_name=device_name,
+                            device_name_state=device_name_state,
                             controller=device_controller,
                             true_pulse=dt_device["TRUE_PWM"],
                             false_pulse=dt_device["FALSE_PWM"]
                         )
-                        V.add(device, inputs=[f'{device_name}_state'], threaded=False)
+                        V.add(device, inputs=[device_name_state], threaded=False)
 
         elif cfg.DRIVE_TRAIN_TYPE == "I2C_SERVO":
             #
