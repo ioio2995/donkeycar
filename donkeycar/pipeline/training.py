@@ -10,7 +10,7 @@ from donkeycar.config import Config
 from donkeycar.parts.keras import KerasPilot
 from donkeycar.parts.interpreter import keras_model_to_tflite, \
     saved_model_to_tensor_rt
-from donkeycar.pipeline.database import PilotDatabase, BackgroundImageLoader
+from donkeycar.pipeline.database import PilotDatabase
 from donkeycar.pipeline.sequence import TubRecord, TubSequence, TfmIterator
 from donkeycar.pipeline.types import TubDataset
 from donkeycar.pipeline.augmentations import ImageAugmentation
@@ -42,11 +42,6 @@ class BatchSequence(object):
         self.transformation = ImageTransformations(config, 'TRANSFORMATIONS')
         self.post_transformation = ImageTransformations(config,
                                                         'POST_TRANSFORMATIONS')
-        
-        # Précharger les images en arrière-plan
-        self.background_loader = BackgroundImageLoader(records)
-        self.background_loader.preload_images()
-
         self.pipeline = self._create_pipeline()
 
     def __len__(self) -> int:

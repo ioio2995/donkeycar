@@ -9,25 +9,10 @@ import pandas as pd
 import logging
 from donkeycar.config import Config
 
-from concurrent.futures import ThreadPoolExecutor
-import threading
-
 logger = logging.getLogger(__name__)
 
 FILE = 'database.json'
 
-# Nouvelle classe pour le préchargement des images
-class BackgroundImageLoader:
-    def __init__(self, records):
-        self.records = records
-        self.executor = ThreadPoolExecutor(max_workers=4)  # Vous pouvez ajuster le nombre de travailleurs.
-        self.lock = threading.Lock()
-
-    def preload_images(self):
-        # On utilise un verrou pour éviter tout conflit lors du préchargement
-        with self.lock:
-            for record in self.records:
-                self.executor.submit(record.image)  # Lancer le chargement des images
 
 class PilotDatabase:
     def __init__(self, cfg: Config) -> None:
@@ -90,7 +75,7 @@ class PilotDatabase:
             return
         full_path = os.path.join(self.cfg.MODELS_PATH, pilot_name)
         model_versions = glob.glob(f'{full_path}.*')
-        logger.info(f'Deleting {','.join(model_versions)}')
+        logger.info(f'Deleting {",".join(model_versions)}')
         for model_version in model_versions:
             if os.path.isdir(model_version):
                 shutil.rmtree(model_version, ignore_errors=True)
@@ -104,7 +89,7 @@ class PilotDatabase:
             if entry['Name'] == pilot_name:
                 return entry
         logger.warning(f'Could not find pilot {pilot_name}, known pilots:'
-                       f'{','.join(self.get_pilot_names())}')
+                       f'{",".join(self.get_pilot_names())}')
         return None
 
     def to_df_tubgrouped(self):

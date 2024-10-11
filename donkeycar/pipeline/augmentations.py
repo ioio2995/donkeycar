@@ -14,16 +14,8 @@ class ImageAugmentation:
     def __init__(self, cfg, key, prob=0.5, always_apply=False):
         aug_list = getattr(cfg, key, [])
 
-        # Ajuster dynamiquement les augmentations selon le scénario
-        if cfg.SCENARIO == "NIGHT":
-            aug_list.append('BRIGHTNESS')
-            prob = 0.7
-        elif cfg.SCENARIO == "OFFROAD":
-            aug_list.append('BLUR')
-            prob = 0.6
-
         augmentations = [ImageAugmentation.create(a, cfg, prob, always_apply)
-                        for a in aug_list]
+                         for a in aug_list]
         self.augmentations = A.Compose(augmentations)
 
     @classmethod
@@ -53,3 +45,4 @@ class ImageAugmentation:
             return img_arr
         aug_img_arr = self.augmentations(image=img_arr)["image"]
         return aug_img_arr
+    
