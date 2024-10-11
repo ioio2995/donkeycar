@@ -989,9 +989,11 @@ def add_drivetrain(V, cfg):
                             pwm_inverted=dt_device["PWM_INVERTED"]
                         )
                         device = PWMBooleanDevice(
+                            device_name=device_name,
                             controller=device_controller,
                             true_pulse=dt_device["TRUE_PWM"],
-                            false_pulse=dt_device["FALSE_PWM"])
+                            false_pulse=dt_device["FALSE_PWM"]
+                        )
                         V.add(device, inputs=[f'{device_name}_state'], threaded=False)
 
         elif cfg.DRIVE_TRAIN_TYPE == "I2C_SERVO":

@@ -389,13 +389,14 @@ class PWMBooleanDevice:
     The device is controlled by setting the PWM pulse for true and false states.
     Expected input is a boolean (e.g., 0 or 1) for state change.
     """
-    def __init__(self, controller, true_pulse, false_pulse):
+    def __init__(self, device_name, controller, true_pulse, false_pulse):
         if controller is None:
             raise ValueError("PWMBooleanDevice requires a set_pulse controller to be passed")
         set_pulse = getattr(controller, "set_pulse", None)
         if set_pulse is None or not callable(set_pulse):
             raise ValueError("controller must have a set_pulse method")
 
+        self.device_name = device_name
         self.controller = controller
         self.true_pulse = true_pulse  # Pulse for "true" state (e.g., locked or high gear)
         self.false_pulse = false_pulse  # Pulse for "false" state (e.g., unlocked or low gear)
@@ -406,7 +407,9 @@ class PWMBooleanDevice:
         self.controller.set_pulse(self.pulse)
         time.sleep(1)
         self.running = True
-        logger.info(f'PWMBooleanDevice created with default state set to false')
+
+        # Afficher le nom du dispositif
+        print(f'PWMBooleanDevice "{self.device_name}" created with default state set to false')
 
     def update(self):
         while self.running:
@@ -427,6 +430,7 @@ class PWMBooleanDevice:
         # Set to the false state (e.g., unlocked or low gear) on shutdown
         self.run(False)
         self.running = False
+
 
 #
 # This seems redundant.  If it's really emulating and PCA9685, then
