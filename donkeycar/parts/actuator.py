@@ -407,8 +407,6 @@ class PWMBooleanDevice:
         self.controller.set_pulse(self.pulse)
         time.sleep(1)
         self.running = True
-
-        # Afficher le nom du dispositif et l'état initial (false state)
         logger.info(f'{self.device_name_state} created')
 
     def update(self):
