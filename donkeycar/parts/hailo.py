@@ -161,7 +161,7 @@ class HailoLinear(HailoPilot):
                     pipeline_end_time = time.time()
                     logger.debug(f"Inference pipeline execution time: {pipeline_end_time - pipeline_start_time:.4f} seconds")
                     
-                                    # Retrieve output layers from the HEF model
+                    # Retrieve output layers from the HEF model
                     output_vstream_info_fc3 = self.hef.get_output_vstream_infos()[0]  # fc3
                     output_vstream_info_fc4 = self.hef.get_output_vstream_infos()[1]  # fc4
                     
@@ -217,7 +217,7 @@ class HailoInferred(HailoPilot):
                     pipeline_end_time = time.time()
                     logger.debug(f"Inference pipeline execution time: {pipeline_end_time - pipeline_start_time:.4f} seconds")
                     
-                                    # Retrieve output layers from the HEF model
+                    # Retrieve output layers from the HEF model
                     output_vstream_info_fc3 = self.hef.get_output_vstream_infos()[0]  # fc3
                     
                     # Retrieve results for each output layer
