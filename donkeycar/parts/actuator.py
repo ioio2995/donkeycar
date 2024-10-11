@@ -383,6 +383,94 @@ class PWMThrottle:
         self.run(0)
         self.running = False
 
+class PWMGear:
+    """
+    Control for the gear shifting servo. Expected input is a boolean (0 or 1).
+    """
+    def __init__(self, controller, low_pulse, high_pulse):
+        if controller is None:
+            raise ValueError("PWMGear requires a set_pulse controller to be passed")
+        set_pulse = getattr(controller, "set_pulse", None)
+        if set_pulse is None or not callable(set_pulse):
+            raise ValueError("controller must have a set_pulse method")
+
+        self.controller = controller
+        self.low_pulse = low_pulse  # Pulse for neutral or low gear
+        self.high_pulse = high_pulse  # Pulse for high gear
+        self.pulse = low_pulse  # Default to low gear
+        self.current_position = None
+
+        # Initialize with low gear (neutral or first gear)
+        self.controller.set_pulse(self.pulse)
+        time.sleep(1)
+        self.running = True
+        logger.info('PWMGear created')
+
+    def update(self):
+        while self.running:
+            self.controller.set_pulse(self.pulse)
+
+    def run_threaded(self, gear_position):
+        # Only update if position has changed
+        if self.current_position != gear_position:
+            self.current_position = gear_position
+            # If gear_position is 1, set to high gear, else set to low gear
+            self.pulse = self.high_pulse if gear_position else self.low_pulse
+            self.controller.set_pulse(self.pulse)
+
+    def run(self, gear_position):
+        self.run_threaded(gear_position)
+
+
+    def shutdown(self):
+        # Set to low gear on shutdown
+        self.run(0)
+        self.running = False
+
+class PWMTLock:
+    """
+    Control for a single T-lock servo (front or rear).
+    Expected input is a boolean (locked or unlocked).
+    """
+    def __init__(self, controller, lock_pulse, unlock_pulse):
+        if controller is None:
+            raise ValueError("PWMTLock requires a set_pulse controller to be passed")
+        set_pulse = getattr(controller, "set_pulse", None)
+        if set_pulse is None or not callable(set_pulse):
+            raise ValueError("controller must have a set_pulse method")
+
+        self.controller = controller
+        self.lock_pulse = lock_pulse  # Pulse for locked state
+        self.unlock_pulse = unlock_pulse  # Pulse for unlocked state
+        self.pulse = unlock_pulse  # Default to unlocked state
+
+        self.current_state = None
+
+        # Initialize with unlocked state
+        self.controller.set_pulse(self.pulse)
+        time.sleep(1)
+        self.running = True
+        logger.info(f'PWMTLock created')
+
+    def update(self):
+        while self.running:
+            pass
+
+    def run_threaded(self, lock_state):
+        # Only update if position has changed
+        if self.current_state != lock_state:
+            self.current_state = lock_state
+            # Set pulse based on lock state (locked or unlocked)
+            pulse = self.lock_pulse if lock_state else self.unlock_pulse
+            self.controller.set_pulse(pulse)
+
+    def run(self, lock_state):    
+        self.run_threaded(lock_state)
+
+    def shutdown(self):
+        # Unlock on shutdown
+        self.run(False)
+        self.running = False
 
 #
 # This seems redundant.  If it's really emulating and PCA9685, then

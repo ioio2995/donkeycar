@@ -143,14 +143,23 @@ def drive(cfg, model_path=None, use_joystick=False, model_type=None,
     V.add(ExplodeDict(V.mem, "web/"), inputs=['web/buttons'])
 
     #
-    # For example: adding a button handler is just adding a part with a run_condition
+    # For example: adding a button handler is just adding a part with a run_condition.
     # set to the button's name, so it runs when button is pressed.
     #
-    V.add(Lambda(lambda v: print(f"web/w1 clicked")), inputs=["web/w1"], run_condition="web/w1")
-    V.add(Lambda(lambda v: print(f"web/w2 clicked")), inputs=["web/w2"], run_condition="web/w2")
-    V.add(Lambda(lambda v: print(f"web/w3 clicked")), inputs=["web/w3"], run_condition="web/w3")
-    V.add(Lambda(lambda v: print(f"web/w4 clicked")), inputs=["web/w4"], run_condition="web/w4")
-    V.add(Lambda(lambda v: print(f"web/w5 clicked")), inputs=["web/w5"], run_condition="web/w5")
+    # Gestion des boutons pour les T-locks et la boîte de vitesses
+
+    # Verrouiller le T-lock avant (bouton 1)
+    V.add(Lambda(lambda v: V.mem.put(['front_lock_state'], True)), inputs=["web/w1"], run_condition="web/w1")
+    # Déverrouiller le T-lock avant (bouton 2)
+    V.add(Lambda(lambda v: V.mem.put(['front_lock_state'], False)), inputs=["web/w2"], run_condition="web/w2")
+    # Verrouiller le T-lock arrière (bouton 3)
+    V.add(Lambda(lambda v: V.mem.put(['rear_lock_state'], True)), inputs=["web/w3"], run_condition="web/w3")
+    # Déverrouiller le T-lock arrière (bouton 4)
+    V.add(Lambda(lambda v: V.mem.put(['rear_lock_state'], False)), inputs=["web/w4"], run_condition="web/w4")
+    # Changer de vitesse (bouton 5)
+    V.add(Lambda(lambda v: V.mem.put(['gear_position'], 0)), inputs=["web/w5"], run_condition="web/w5")
+    # Changer de vitesse (bouton 6)
+    V.add(Lambda(lambda v: V.mem.put(['gear_position'], 1)), inputs=["web/w6"], run_condition="web/w6")
 
     #this throttle filter will allow one tap back for esc reverse
     th_filter = ThrottleFilter()
@@ -947,7 +956,7 @@ def add_drivetrain(V, cfg):
             # using a PwmPin for steering (servo)
             # and as second PwmPin for throttle (ESC)
             #
-            from donkeycar.parts.actuator import PWMSteering, PWMThrottle, PulseController
+            from donkeycar.parts.actuator import PWMSteering, PWMThrottle, PWMGear, PWMTLock, PulseController
 
             dt = cfg.PWM_STEERING_THROTTLE
             steering_controller = PulseController(
@@ -968,6 +977,38 @@ def add_drivetrain(V, cfg):
                                                 min_pulse=dt['THROTTLE_REVERSE_PWM'])
             V.add(steering, inputs=['steering'], threaded=True)
             V.add(throttle, inputs=['throttle'], threaded=True)
+
+             # Optionally add gear shifting control (if applicable)
+            if cfg.HAS_GEAR:
+                gear_controller = PulseController(
+                    pwm_pin=pins.pwm_pin_by_id(dt["PWM_GEAR_PIN"]),
+                    pwm_scale=dt["PWM_GEAR_SCALE"],
+                    pwm_inverted=dt["PWM_GEAR_INVERTED"])
+                gear = PWMGear(controller=gear_controller,
+                            low_pulse=dt["GEAR_LOW_PWM"],
+                            high_pulse=dt["GEAR_HIGH_PWM"])
+                V.add(gear, inputs=['gear_position'], threaded=False)
+
+            if cfg.HAS_FRONT_TLOCK:
+                front_tlock_controller = PulseController(
+                    pwm_pin=pins.pwm_pin_by_id(dt["PWM_FRONT_TLOCK_PIN"]),
+                    pwm_scale=dt["PWM_FRONT_TLOCK_SCALE"],
+                    pwm_inverted=dt["PWM_FRONT_TLOCK_INVERTED"])
+                front_tlock = PWMTLock(controller=front_tlock_controller,
+                                    lock_pulse=dt["FRONT_TLOCK_LOCK_PWM"],
+                                    unlock_pulse=dt["FRONT_TLOCK_UNLOCK_PWM"])
+                V.add(front_tlock, inputs=['front_lock_state'], threaded=False)
+
+            # Optionally add rear T-lock control (if applicable)
+            if cfg.HAS_REAR_TLOCK:
+                rear_tlock_controller = PulseController(
+                    pwm_pin=pins.pwm_pin_by_id(dt["PWM_REAR_TLOCK_PIN"]),
+                    pwm_scale=dt["PWM_REAR_TLOCK_SCALE"],
+                    pwm_inverted=dt["PWM_REAR_TLOCK_INVERTED"])
+                rear_tlock = PWMTLock(controller=rear_tlock_controller,
+                                    lock_pulse=dt["REAR_TLOCK_LOCK_PWM"],
+                                    unlock_pulse=dt["REAR_TLOCK_UNLOCK_PWM"])
+                V.add(rear_tlock, inputs=['rear_lock_state'], threaded=False)
 
         elif cfg.DRIVE_TRAIN_TYPE == "I2C_SERVO":
             #
