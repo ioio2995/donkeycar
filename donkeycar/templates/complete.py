@@ -149,17 +149,17 @@ def drive(cfg, model_path=None, use_joystick=False, model_type=None,
     # Gestion des boutons pour les T-locks et la boîte de vitesses
 
     # Verrouiller le T-lock avant (bouton 1)
-    V.add(Lambda(lambda v: V.mem.put(['front_lock_state'], True)), inputs=["web/w1"], run_condition="web/w1")
+    V.add(Lambda(lambda v: V.mem.put(['tlock_front_state'], True)), inputs=["web/w1"], run_condition="web/w1")
     # Déverrouiller le T-lock avant (bouton 2)
-    V.add(Lambda(lambda v: V.mem.put(['front_lock_state'], False)), inputs=["web/w2"], run_condition="web/w2")
+    V.add(Lambda(lambda v: V.mem.put(['tlock_front_state'], False)), inputs=["web/w2"], run_condition="web/w2")
     # Verrouiller le T-lock arrière (bouton 3)
-    V.add(Lambda(lambda v: V.mem.put(['rear_lock_state'], True)), inputs=["web/w3"], run_condition="web/w3")
+    V.add(Lambda(lambda v: V.mem.put(['tlock_rear_state'], True)), inputs=["web/w3"], run_condition="web/w3")
     # Déverrouiller le T-lock arrière (bouton 4)
-    V.add(Lambda(lambda v: V.mem.put(['rear_lock_state'], False)), inputs=["web/w4"], run_condition="web/w4")
+    V.add(Lambda(lambda v: V.mem.put(['tlock_rear_state'], False)), inputs=["web/w4"], run_condition="web/w4")
     # Changer de vitesse (bouton 5)
-    V.add(Lambda(lambda v: V.mem.put(['gear_position'], 0)), inputs=["web/w5"], run_condition="web/w5")
+    V.add(Lambda(lambda v: V.mem.put(['gear_state'], 0)), inputs=["web/w5"], run_condition="web/w5")
     # Changer de vitesse (bouton 6)
-    V.add(Lambda(lambda v: V.mem.put(['gear_position'], 1)), inputs=["web/w6"], run_condition="web/w6")
+    V.add(Lambda(lambda v: V.mem.put(['gear_state'], 1)), inputs=["web/w6"], run_condition="web/w6")
 
     #this throttle filter will allow one tap back for esc reverse
     th_filter = ThrottleFilter()

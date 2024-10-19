@@ -495,12 +495,7 @@ def get_model_by_type(model_type: str, cfg: 'Config') -> Union['KerasPilot', 'Fa
     if model_type is None:
         model_type = cfg.DEFAULT_MODEL_TYPE
     logger.info(f'get_model_by_type: model type is: {model_type}')
-    # Check if RESIZE_HEIGHT and RESIZE_WIDTH are defined
-    input_shape = (
-        cfg.RESIZE_HEIGHT if hasattr(cfg, 'RESIZE_HEIGHT') and cfg.RESIZE_HEIGHT is not None else cfg.IMAGE_H,
-        cfg.RESIZE_WIDTH if hasattr(cfg, 'RESIZE_WIDTH') and cfg.RESIZE_WIDTH is not None else cfg.IMAGE_W,
-        cfg.IMAGE_DEPTH
-    )
+    input_shape = (cfg.IMAGE_H, cfg.IMAGE_W, cfg.IMAGE_DEPTH)
     if 'tflite_' in model_type:
         interpreter = TfLite()
         used_model_type = model_type.replace('tflite_', '')
@@ -515,11 +510,9 @@ def get_model_by_type(model_type: str, cfg: 'Config') -> Union['KerasPilot', 'Fa
             return FastAILinear(interpreter=interpreter, input_shape=input_shape)
     elif 'hailo_' in model_type:
         used_model_type = model_type.replace('hailo_', '')
-        from donkeycar.parts.hailo import HailoLinear, HailoInferred
         if used_model_type == "linear":
+            from donkeycar.parts.hailo import HailoLinear
             return HailoLinear(input_shape=input_shape)
-        elif used_model_type == "inferred":
-            return HailoInferred(input_shape=input_shape)
     else:
         interpreter = KerasInterpreter()
         used_model_type = model_type
